@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>تسبيح</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%;height:100dvh;overflow:hidden} body{background:#000;color:#fff;font-family:system-ui,Tahoma,sans-serif;overscroll-behavior:none;user-select:none;height:100vh;height:100dvh;min-height:100dvh;overflow:hidden;display:flex;flex-direction:column;position:fixed;inset:0;width:100vw}
+#brightnessOverlay{position:fixed;inset:0;background:#000;pointer-events:none;z-index:40;opacity:0;transition:opacity 0.15s}
+#settingsBtn{position:fixed;top:16px;left:16px;z-index:9999;width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(12px)}
+#fsBtn{position:fixed;top:16px;right:16px;z-index:9999;width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(12px)}
+#main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:10;padding:20px}
+#dhikrText{font-size:26px;color:#9ca3af;margin-bottom:24px;min-height:40px;text-align:center;padding:0 20px;line-height:1.4}
+#counterWrap{position:relative;width:260px;height:260px;display:flex;align-items:center;justify-content:center}
+#progressSvg{position:absolute;inset:0;transform:rotate(-90deg)}
+#countDisplay{font-size:84px;font-weight:800}
+#targetLabel{position:absolute;bottom:20px;font-size:13px;color:#6b7280}
+#longPressProgress{position:absolute;inset:-8px;pointer-events:none;transform:rotate(-90deg);opacity:0;transition:opacity 0.15s}
+#hint{margin-top:28px;font-size:12px;color:#4b5563}
+#settingsSheet{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.65);backdrop-filter:blur(10px);display:none;align-items:flex-end;justify-content:center}
+#settingsSheet.open{display:flex}
+#sheetContent{width:100%;max-width:480px;max-height:86vh;overflow-y:auto;background:#0a0a0a;border-top:1px solid #1f1f1f;border-radius:24px 24px 0 0;padding:20px 20px 40px;animation:slideUp .3s}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.section{margin-bottom:18px;padding:16px;background:#111;border:1px solid #1e1e1e;border-radius:16px}
+.sectionTitle{font-size:11px;color:#6b7280;margin-bottom:12px;font-weight:700;letter-spacing:1px}
+.row{display:flex;align-items:center;justify-content:space-between;margin:10px 0}
+.slider{width:100%;-webkit-appearance:none;height:6px;background:#222;border-radius:3px}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;cursor:pointer}
+.chip{padding:8px 14px;border-radius:20px;background:#1a1a1a;border:1px solid #2a2a2a;color:#a3a3a3;font-size:13px;margin:4px;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.chip.active{background:#06b6d4;color:#000;border-color:#06b6d4;font-weight:700}
+.chip .del{width:16px;height:16px;border-radius:50%;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:10px}
+input::placeholder{color:#555;font-weight:300;}
+input[type=text],input[type=number]{background:#1a1a1a;border:1px solid #2a2a2a;color:#fff;border-radius:10px;padding:10px 12px;width:100%;font-size:14px}
+.btn{padding:10px 16px;border-radius:10px;border:none;font-weight:600;cursor:pointer;font-size:13px}
+.btn-primary{background:#06b6d4;color:#000}
+.btn-ghost{background:#1a1a1a;color:#a3a3a3;border:1px solid #2a2a2a}
+.targetBtn{flex:1;padding:12px;border-radius:12px;border:1px solid #2a2a2a;background:#1a1a1a;color:#888;font-size:15px;font-weight:700;cursor:pointer}
+.targetBtn.active{background:#fff;color:#000}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:10px 18px;border-radius:20px;font-size:13px;z-index:10000;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="brightnessOverlay"></div>
+<div id="fsBtn" onclick="toggleFullscreen()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.6"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M8 21h3M5 19a2 2 0 0 1-2-2v-3M21 16v3a2 2 0 0 1-2 2h-3"/></svg></div>
+<div id="settingsBtn" onclick="openSettings()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.6"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 9 15a1.65 1.65 0 0 0-1-1.51V13a2 2 0 0 1 0-4v-.49c0-.6.38-1.13 1-1.51A1.65 1.65 0 0 0 10.82 6.67l-.06-.06A2 2 0 1 1 13.59 3.78l.06.06A1.65 1.65 0 0 0 15.47 4.17c.6.38 1 1 1 1.51V6a2 2 0 0 1 0 4v.49c0 .6-.38 1.13-1 1.51Z"/></svg></div>
+<div id="main">
+<div id="dhikrText">سبحان الله</div>
+<div id="counterWrap">
+<svg id="progressSvg" width="260" height="260"><circle cx="130" cy="130" r="120" stroke="#1a1a1a" stroke-width="6" fill="none"/><circle id="progressCircle" cx="130" cy="130" r="120" stroke="#06b6d4" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="753.98" stroke-dashoffset="753.98" style="transition:stroke-dashoffset .2s"/></svg>
+<svg id="longPressProgress" width="276" height="276" viewBox="0 0 276 276"><circle cx="138" cy="138" r="130" stroke="#ef4444" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="816.8" stroke-dashoffset="816.8" id="lpCircle"/></svg>
+<div id="countDisplay">0</div>
+<div id="targetLabel"></div>
+</div>
+<div id="hint">اضغط للعد • اضغط مطولا للتصفير</div>
+</div>
+<div id="settingsSheet" onclick="if(event.target===this)closeSettings()">
+<div id="sheetContent">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h2>الإعدادات</h2><div style="width:36px;height:36px;border-radius:50%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="closeSettings()">✕</div></div>
+<div class="section"><div class="sectionTitle">الأذكار</div><div style="display:flex;gap:8px;margin-bottom:12px"><input type="text" id="newDhikr" placeholder="اكتب ذكر جديد"><button class="btn btn-primary" onclick="addDhikr()">إضافة</button></div><div id="azkarList"></div></div>
+<div class="section"><div class="sectionTitle">الهدف</div><div style="display:flex;gap:8px;margin-bottom:12px"><button class="targetBtn" id="t0" onclick="setTarget(0)">مفتوح</button><button class="targetBtn" id="t33" onclick="setTarget(33)">33</button><button class="targetBtn" id="t99" onclick="setTarget(99)">99</button></div><div style="display:flex;gap:8px"><input type="number" id="customTarget" placeholder="رقم مخصص" oninput="autoSetCustomTarget(this.value)"><button class="btn btn-primary" onclick="setCustomTarget()">تحديد</button></div></div>
+<div class="section"><div class="sectionTitle">الاهتزاز</div><div class="row"><span>اهتزاز الضغط</span><span id="vibPressLabel">30ms</span></div><input class="slider" type="range" min="0" max="100" id="vibPressSlider" oninput="updateVibPress(this.value)"><div class="row" style="margin-top:12px"><span>اهتزاز الإنهاء</span><span id="vibFinishLabel">200ms</span></div><input class="slider" type="range" min="0" max="500" id="vibFinishSlider" oninput="updateVibFinish(this.value)"><div class="row" style="margin-top:12px"><span>تكرار الاهتزاز</span><span id="vibRepeatLabel">2</span></div><input class="slider" type="range" min="1" max="5" id="vibRepeatSlider" oninput="updateVibRepeat(this.value)"></div>
+<div class="section"><div class="sectionTitle">السطوع والضغط المطول</div><div class="row"><span>السطوع</span><span id="brightLabel">100%</span></div><input class="slider" type="range" min="10" max="100" id="brightSlider" oninput="updateBrightness(this.value)"><div class="row" style="margin-top:12px"><span>مدة الضغط المطول</span><span id="lpLabel">1.2s</span></div><input class="slider" type="range" min="0.5" max="3" step="0.1" id="lpSlider" oninput="updateLongPress(this.value)"></div>
+<div class="section"><button class="btn btn-ghost" style="width:100%" onclick="resetCounter();closeSettings()">تصفير العداد</button></div>
+</div>
+</div>
+<div id="toast" class="toast"></div>
+<script>
+let azkarList=["سبحان الله","الحمد لله","لا إله إلا الله","الله أكبر","أستغفر الله"];
+let currentDhikr="سبحان الله";
+let target=33;
+let ascCount=0;
+let brightness=100;
+let vibPress=30;
+let vibFinish=200;
+let vibRepeat=2;
+let longPressDuration=1.2;
+let longPressStart=0;
+let lpAnim=0;
+
+// VIBRATION - ULTIMATE APK COMPATIBLE
+function vibrateDND(dur, rep){
+ rep = rep||1;
+ dur = Math.max(10, parseInt(dur)||30);
+ try{ if(window.Android && window.Android.vibrate){ window.Android.vibrate(dur, rep); } }catch(e){}
+ try{ if(window.Android && window.Android.Vibrate){ window.Android.Vibrate(dur); } }catch(e){}
+ try{ if(window.App && window.App.vibrate){ window.App.vibrate(dur); } }catch(e){}
+ try{ if(window.APP && window.APP.vibrate){ window.APP.vibrate(dur); } }catch(e){}
+ try{ if(window.JSInterface && window.JSInterface.vibrate){ window.JSInterface.vibrate(dur); } }catch(e){}
+ try{ if(window.AndroidInterface && window.AndroidInterface.vibrate){ window.AndroidInterface.vibrate(dur); } }catch(e){}
+ try{ if(window.Native && window.Native.vibrate){ window.Native.vibrate(dur); } }catch(e){}
+ try{
+   if('vibrate' in navigator){
+     if(rep>1){
+       let pat=[]; for(let i=0;i<rep;i++){ pat.push(dur); if(i<rep-1) pat.push(60); }
+       navigator.vibrate(pat);
+     } else { navigator.vibrate(dur); }
+   }
+ }catch(e){}
+ try{
+   let ctx = new (window.AudioContext||window.webkitAudioContext)();
+   if(ctx){
+     for(let r=0;r<rep;r++){
+       setTimeout(()=>{
+         try{
+           let o=ctx.createOscillator(); let g=ctx.createGain();
+           o.type='sine'; o.frequency.value=80;
+           g.gain.setValueAtTime(1.0, ctx.currentTime);
+           g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime+dur/1000);
+           o.connect(g); g.connect(ctx.destination);
+           o.start(); o.stop(ctx.currentTime+dur/1000+0.05);
+         }catch(e){}
+       }, r*(dur+70));
+     }
+     setTimeout(()=>{ try{ctx.close();}catch(e){} }, rep*(dur+70)+200);
+   }
+ }catch(e){}
+}
+
+function saveAll(){
+ let d={azkarList,currentDhikr,target,ascCount,brightness,vibPress,vibFinish,vibRepeat,longPressDuration};
+ localStorage.setItem('tasbeeh_final',JSON.stringify(d));
+}
+function loadAll(){
+ try{
+   let d=JSON.parse(localStorage.getItem('tasbeeh_final')||'{}');
+   if(d.azkarList) azkarList=d.azkarList;
+   if(d.currentDhikr) currentDhikr=d.currentDhikr;
+   if(d.target!==undefined) target=d.target;
+   if(d.ascCount!==undefined) ascCount=d.ascCount;
+   if(d.brightness) brightness=d.brightness;
+   if(d.vibPress!==undefined) vibPress=d.vibPress;
+   if(d.vibFinish!==undefined) vibFinish=d.vibFinish;
+   if(d.vibRepeat!==undefined) vibRepeat=d.vibRepeat;
+   if(d.longPressDuration) longPressDuration=d.longPressDuration;
+ }catch(e){}
+ document.getElementById('brightSlider').value=brightness;
+ document.getElementById('brightLabel').textContent=brightness+'%';
+ document.getElementById('vibPressSlider').value=vibPress;
+ document.getElementById('vibPressLabel').textContent=vibPress+'ms';
+ document.getElementById('vibFinishSlider').value=vibFinish;
+ document.getElementById('vibFinishLabel').textContent=vibFinish+'ms';
+ document.getElementById('vibRepeatSlider').value=vibRepeat;
+ document.getElementById('vibRepeatLabel').textContent=vibRepeat;
+ document.getElementById('lpSlider').value=longPressDuration;
+ document.getElementById('lpLabel').textContent=longPressDuration+'s';
+ applyBrightness();
+}
+function applyBrightness(){
+ document.getElementById('brightnessOverlay').style.opacity=(100-brightness)/100*0.85;
+}
+function updateDisplay(){
+ document.getElementById('dhikrText').textContent=currentDhikr;
+ let displayVal = target===0 ? ascCount : Math.max(0, target-ascCount);
+ document.getElementById('countDisplay').textContent=displayVal;
+ let label=document.getElementById('targetLabel');
+ if(target===0){ label.textContent='العدد: '+ascCount; }
+ else { label.textContent='متبقي '+(target-ascCount); if(target-ascCount<=0) label.textContent='تم!'; }
+ let pct = target===0 ? 0 : Math.min(1, ascCount/target);
+ let circ=753.98;
+ document.getElementById('progressCircle').style.strokeDashoffset=circ-(circ*pct);
+ // targets
+ document.querySelectorAll('.targetBtn').forEach(b=>b.classList.remove('active'));
+ let tb=document.getElementById('t'+target); if(tb) tb.classList.add('active');
+ renderAzkar();
+}
+function increment(){
+ if(target!==0 && ascCount>=target){
+   vibrateDND(vibFinish, vibRepeat);
+   showToast('تم الهدف - استئناف');
+   ascCount=0;
+ } else {
+   ascCount++;
+   vibrateDND(vibPress,1);
+   if(target!==0 && ascCount>=target){
+     vibrateDND(vibFinish, vibRepeat);
+     showToast('أحسنت! اكتمل '+target);
+   }
+ }
+ saveAll(); updateDisplay();
+}
+function resetCounter(){ ascCount=0; saveAll(); updateDisplay(); vibrateDND(80,1); showToast('تم التصفير'); }
+function autoSetCustomTarget(val){ let v=parseInt(val); if(isNaN(v)) return; if(val==='') return; if(v>=0){ setTarget(v); } }
+function setCustomTarget(){ let v=parseInt(document.getElementById('customTarget').value); if(!isNaN(v) && v>=0) setTarget(v); }
+function setTarget(v){ target=v; ascCount=0; saveAll(); updateDisplay(); showToast(v===0?'تصاعدي مفتوح':'تنازلي من '+v); }
+function addDhikr(){ let inp=document.getElementById('newDhikr'); let val=inp.value.trim(); if(!val) return; if(!azkarList.includes(val)) azkarList.push(val); currentDhikr=val; inp.value=''; saveAll(); updateDisplay(); showToast('تمت الإضافة'); }
+function selectDhikr(t){ currentDhikr=t; saveAll(); updateDisplay(); }
+function deleteDhikr(t){ azkarList=azkarList.filter(x=>x!==t); if(currentDhikr===t) currentDhikr=azkarList[0]||"سبحان الله"; saveAll(); updateDisplay(); }
+function renderAzkar(){ let cont=document.getElementById('azkarList'); cont.innerHTML=''; azkarList.forEach(txt=>{ let div=document.createElement('div'); div.className='chip'+(txt===currentDhikr?' active':''); let safe=txt.replace(/'/g,"\'"); div.innerHTML='<span onclick="selectDhikr(\''+safe+'\')">'+txt+'</span><span class=del onclick="deleteDhikr(\''+safe+'\')">✕</span>'; cont.appendChild(div); }); }
+function updateBrightness(v){ brightness=parseInt(v); document.getElementById('brightLabel').textContent=brightness+'%'; applyBrightness(); saveAll(); }
+function updateVibPress(v){ vibPress=parseInt(v); document.getElementById('vibPressLabel').textContent=v+'ms'; saveAll(); }
+function updateVibFinish(v){ vibFinish=parseInt(v); document.getElementById('vibFinishLabel').textContent=v+'ms'; saveAll(); }
+function updateVibRepeat(v){ vibRepeat=parseInt(v); document.getElementById('vibRepeatLabel').textContent=v; saveAll(); }
+function updateLongPress(v){ longPressDuration=parseFloat(v); document.getElementById('lpLabel').textContent=v+'s'; saveAll(); }
+function openSettings(){ document.getElementById('settingsSheet').classList.add('open'); }
+function closeSettings(){ document.getElementById('settingsSheet').classList.remove('open'); }
+function showToast(m){ let t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
+
+let lastTapTime=0;
+let isTouchDevice=false;
+const main=document.getElementById('main');
+function startPress(e){
+ if(e.target.closest('#settingsSheet')||e.target.closest('#settingsBtn')||e.target.closest('#fsBtn')) return;
+ longPressStart=Date.now();
+ let lpProg=document.getElementById('longPressProgress'); lpProg.style.opacity='1';
+ let circle=document.getElementById('lpCircle'); let total=816.8;
+ function anim(){
+  let elapsed=(Date.now()-longPressStart)/1000;
+  let pct=Math.min(1,elapsed/longPressDuration);
+  circle.style.strokeDashoffset=total-(total*pct);
+  if(pct>=1){cancelAnimationFrame(lpAnim); lpProg.style.opacity='0'; circle.style.strokeDashoffset='816.8'; resetCounter(); longPressStart=0;}
+  else{lpAnim=requestAnimationFrame(anim);}
+ }
+ lpAnim=requestAnimationFrame(anim);
+}
+function endPress(e, isMouse){
+ if(e&&e.target&&e.target.closest&&(e.target.closest('#settingsSheet')||e.target.closest('#settingsBtn')||e.target.closest('#fsBtn'))) return;
+ if(isMouse && isTouchDevice) return;
+ cancelAnimationFrame(lpAnim);
+ let lpProg=document.getElementById('longPressProgress');
+ let circle=document.getElementById('lpCircle');
+ if(lpProg) lpProg.style.opacity='0';
+ if(circle) circle.style.strokeDashoffset='816.8';
+ let dur=(Date.now()-longPressStart)/1000;
+ if(longPressStart===0) return;
+ longPressStart=0;
+ if(dur>=longPressDuration){} else if(dur<0.8){
+  let now=Date.now();
+  if(now-lastTapTime<300) return;
+  lastTapTime=now;
+  increment();
+ }
+}
+main.addEventListener('touchstart',e=>{isTouchDevice=true; startPress(e);},{passive:false});
+main.addEventListener('touchend',e=>{endPress(e,false);},{passive:false});
+main.addEventListener('mousedown',e=>{if(isTouchDevice) return; startPress(e);});
+main.addEventListener('mouseup',e=>{if(isTouchDevice) return; endPress(e,true);});
+main.addEventListener('touchmove',e=>{if(longPressStart>0) e.preventDefault();},{passive:false});
+window.addEventListener('keydown',e=>{if(e.key==='AudioVolumeDown'||e.key==='VolumeDown'||e.keyCode===25||e.keyCode===174){e.preventDefault();resetCounter();return false;}});
+
+// Immersive fullscreen for APK
+function ensureImmersive(){
+ try{ if(window.Android && window.Android.enterImmersive){ window.Android.enterImmersive(); } }catch(e){}
+}
+window.addEventListener('load', ()=>{ setTimeout(()=>{ ensureImmersive(); }, 500); });
+document.addEventListener('click', ()=>{ ensureImmersive(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') ensureImmersive(); });
+window.onResume = function(){ ensureImmersive(); }
+
+function toggleFullscreen(){
+ let el=document.documentElement;
+ if(!document.fullscreenElement){
+  if(el.requestFullscreen){el.requestFullscreen();}
+  else if(el.webkitRequestFullscreen){el.webkitRequestFullscreen();}
+  showToast('وضع ملء الشاشة');
+ }else{
+  if(document.exitFullscreen){document.exitFullscreen();}
+  else if(document.webkitExitFullscreen){document.webkitExitFullscreen();}
+ }
+}
+let firstTap=true;
+document.addEventListener('click', ()=>{
+ if(firstTap){ firstTap=false; setTimeout(()=>{ try{ document.documentElement.requestFullscreen().catch(()=>{}); }catch(e){} },300); }
+},{once:true});
+
+loadAll();updateDisplay();
+if(ascCount>0)showToast('استئناف '+(target===0?ascCount:'متبقي '+(target-ascCount)));
+if('wakeLock' in navigator){let wl;async function req(){try{wl=await navigator.wakeLock.request('screen');}catch(e){}}req();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')req();});}
+window.forceVibrate=(d,r)=>vibrateDND(d,r);
+</script>
+</body>
+</html>
